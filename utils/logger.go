@@ -1,7 +1,6 @@
-package logger
+package utils
 
 import (
-	"delayer/pkg/config"
 	"log"
 	"os"
 	"io"
@@ -44,10 +43,10 @@ func (p *Logger) Error(message string) {
 }
 
 // 创建实例
-func New(settings config.Settings) Logger {
+func NewLogger(config Config) Logger {
 	logger := Logger{
-		AccessLog: settings.Delayerd.AccessLog,
-		ErrorLog:  settings.Delayerd.ErrorLog,
+		AccessLog: config.Delayerd.AccessLog,
+		ErrorLog:  config.Delayerd.ErrorLog,
 	}
 	return logger
 }
