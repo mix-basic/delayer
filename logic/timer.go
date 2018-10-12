@@ -4,20 +4,13 @@ import (
 	"delayer/utils"
 	"github.com/gomodule/redigo/redis"
 	"time"
-	"fmt"
+	"strings"
 )
 
 type Timer struct {
 	Config utils.Config
 	Logger utils.Logger
 	Pool   *redis.Pool
-}
-
-type JopBucket struct {
-	Topic string `json:"topic"`
-	JobId string `json:"job_id"`
-	Delay int    `json:"delay"`
-	Body  string `json:"body"`
 }
 
 const (
@@ -80,8 +73,9 @@ func (p *Timer) Run() {
 				}
 			}
 			// 并行移动至Topic对应的ReadyQueue
-			fmt.Println(topics)
-			fmt.Println("-------------")
+			for topic, jobIDs := range topics {
+				go p.moveJobToReadyQueue(jobIDs, topic)
+			}
 		}
 	}
 }
@@ -90,7 +84,7 @@ func (p *Timer) Run() {
 func (p *Timer) getExpireJobs() []string {
 	conn := p.Pool.Get()
 	defer conn.Close()
-	jobs, err := redis.Strings(conn.Do("ZRANGEBYSCORE", KEY_JOP_POOL, "0", "99999999999"))
+	jobs, err := redis.Strings(conn.Do("ZRANGEBYSCORE", KEY_JOP_POOL, "0", time.Now().Unix()))
 	if (err != nil) {
 		p.Logger.Error(err.Error())
 	}
@@ -109,7 +103,35 @@ func (p *Timer) getJopTopic(jobID string, ch chan []string) {
 	ch <- arr
 }
 
-// 放入Ready队列
-func (p *Timer) pushReadyQueue(jobId string) {
-
+// 移动任务至ReadyQueue
+func (p *Timer) moveJobToReadyQueue(jobIDs []string, topic string) {
+	conn := p.Pool.Get()
+	defer conn.Close()
+	// 移除JopPool
+	zremArgs := make([]interface{}, len(jobIDs)+1)
+	zremArgs[0] = KEY_JOP_POOL
+	for k, v := range jobIDs {
+		zremArgs[k+1] = v
+	}
+	succ, err := redis.Bool(conn.Do("ZREM", zremArgs...))
+	if (err != nil) {
+		p.Logger.Error(err.Error())
+	}
+	if (!succ) {
+		p.Logger.Info("Move failure, jobIDs: " + strings.Join(jobIDs, ","))
+		return
+	}
+	// 插入ReadyQueue
+	lpushArgs := make([]interface{}, len(jobIDs)+1)
+	lpushArgs[0] = PREFIX_READY_QUEUE+topic
+	for k, v := range jobIDs {
+		lpushArgs[k+1] = v
+	}
+	succ, err := redis.Bool(conn.Do("LPUSH", zremArgs...))
+	if (err != nil) {
+		p.Logger.Error(err.Error())
+	}
+	if (!succ) {
+		p.Logger.Info("Move failure, jobIDs: " + strings.Join(jobIDs, ","))
+	}
 }
