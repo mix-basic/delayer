@@ -5,12 +5,14 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"time"
 	"strings"
+	"fmt"
 )
 
 type Timer struct {
-	Config utils.Config
-	Logger utils.Logger
-	Pool   *redis.Pool
+	Config    utils.Config
+	Logger    utils.Logger
+	Pool      *redis.Pool
+	ErrHandle func(err error, funcName string, data string)
 }
 
 const (
@@ -45,6 +47,16 @@ func (p *Timer) Init() {
 		MaxConnLifetime: time.Duration(p.Config.Redis.ConnMaxLifetime) * time.Second,
 	}
 	p.Pool = pool
+	errHandle := func(err error, funcName string, data string) {
+		if (err != nil) {
+			if (data != "") {
+				data = ", [ " + data + " ]"
+			}
+			message := fmt.Sprintf("FAILURE: func %s, %s%s", funcName, err.Error(), data)
+			p.Logger.Info(message)
+		}
+	}
+	p.ErrHandle = errHandle
 }
 
 // 执行
@@ -54,13 +66,18 @@ func (p *Timer) Run() {
 		select {
 		case <-ticker.C:
 			// 执行任务
-			jobs := p.getExpireJobs()
+			jobs, err := p.getExpireJobs()
+			if (err != nil) {
+				p.ErrHandle(err, "getExpireJobs", "")
+				return
+			}
 			// 并行获取Topic
 			topics := make(map[string][]string)
 			ch := make(chan []string)
 			for _, jobID := range jobs {
 				go p.getJopTopic(jobID, ch)
 			}
+			// Topic分组
 			for i := 0; i < len(jobs); i++ {
 				arr := <-ch
 				if (arr[1] != "") {
@@ -81,23 +98,21 @@ func (p *Timer) Run() {
 }
 
 // 获取到期的任务
-func (p *Timer) getExpireJobs() []string {
+func (p *Timer) getExpireJobs() ([]string, error) {
 	conn := p.Pool.Get()
 	defer conn.Close()
-	jobs, err := redis.Strings(conn.Do("ZRANGEBYSCORE", KEY_JOP_POOL, "0", time.Now().Unix()))
-	if (err != nil) {
-		p.Logger.Error(err.Error())
-	}
-	return jobs
+	return redis.Strings(conn.Do("ZRANGEBYSCORE", KEY_JOP_POOL, "0", time.Now().Unix()))
 }
 
-// 放入Ready队列
+// 获取任务的Topic
 func (p *Timer) getJopTopic(jobID string, ch chan []string) {
 	conn := p.Pool.Get()
 	defer conn.Close()
 	topic, err := redis.Strings(conn.Do("HMGET", PREFIX_JOP_BUCKET+jobID, "topic"))
 	if (err != nil) {
-		p.Logger.Error(err.Error())
+		p.ErrHandle(err, "getJopTopic", jobID)
+		ch <- []string{jobID, ""}
+		return
 	}
 	arr := []string{jobID, topic[0]}
 	ch <- arr
@@ -105,33 +120,57 @@ func (p *Timer) getJopTopic(jobID string, ch chan []string) {
 
 // 移动任务至ReadyQueue
 func (p *Timer) moveJobToReadyQueue(jobIDs []string, topic string) {
+	// 获取连接
 	conn := p.Pool.Get()
 	defer conn.Close()
+	// 开启事物
+	if err := p.startTrans(conn); err != nil {
+		p.ErrHandle(err, "startTrans", strings.Join(jobIDs, ","))
+		return
+	}
 	// 移除JopPool
-	zremArgs := make([]interface{}, len(jobIDs)+1)
-	zremArgs[0] = KEY_JOP_POOL
-	for k, v := range jobIDs {
-		zremArgs[k+1] = v
-	}
-	succ, err := redis.Bool(conn.Do("ZREM", zremArgs...))
-	if (err != nil) {
-		p.Logger.Error(err.Error())
-	}
-	if (!succ) {
-		p.Logger.Info("Move failure, jobIDs: " + strings.Join(jobIDs, ","))
+	if err := p.delJopPool(conn, jobIDs, topic); err != nil {
+		p.ErrHandle(err, "delJopPool", strings.Join(jobIDs, ","))
 		return
 	}
 	// 插入ReadyQueue
-	lpushArgs := make([]interface{}, len(jobIDs)+1)
-	lpushArgs[0] = PREFIX_READY_QUEUE+topic
+	if err := p.addReadyQueue(conn, jobIDs, topic); err != nil {
+		p.ErrHandle(err, "addReadyQueue", strings.Join(jobIDs, ","))
+		return
+	}
+	// 提交事物
+	if err := p.commit(conn); err != nil {
+		p.ErrHandle(err, "commit", strings.Join(jobIDs, ","))
+		return
+	}
+}
+
+// 开启事务
+func (p *Timer) startTrans(conn redis.Conn) error {
+	return conn.Send("MULTI")
+}
+
+// 提交事务
+func (p *Timer) commit(conn redis.Conn) error {
+	return conn.Send("EXEC")
+}
+
+// 移除JopPool
+func (p *Timer) delJopPool(conn redis.Conn, jobIDs []string, topic string) error {
+	args := make([]interface{}, len(jobIDs)+1)
+	args[0] = KEY_JOP_POOL
 	for k, v := range jobIDs {
-		lpushArgs[k+1] = v
+		args[k+1] = v
 	}
-	succ, err := redis.Bool(conn.Do("LPUSH", zremArgs...))
-	if (err != nil) {
-		p.Logger.Error(err.Error())
+	return conn.Send("ZREM", args...)
+}
+
+// 插入ReadyQueue
+func (p *Timer) addReadyQueue(conn redis.Conn, jobIDs []string, topic string) error {
+	args := make([]interface{}, len(jobIDs)+1)
+	args[0] = PREFIX_READY_QUEUE + topic
+	for k, v := range jobIDs {
+		args[k+1] = v
 	}
-	if (!succ) {
-		p.Logger.Info("Move failure, jobIDs: " + strings.Join(jobIDs, ","))
-	}
+	return conn.Send("LPUSH", args...)
 }
