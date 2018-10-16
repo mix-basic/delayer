@@ -53,7 +53,7 @@ func (p *Timer) Init() {
 				data = ", [" + data + "]"
 			}
 			message := fmt.Sprintf("FAILURE: func %s, %s%s", funcName, err.Error(), data)
-			p.Logger.Info(message)
+			p.Logger.Error(message)
 		}
 	}
 	p.ErrHandle = errHandle
@@ -69,7 +69,7 @@ func (p *Timer) Run() {
 			jobs, err := p.getExpireJobs()
 			if (err != nil) {
 				p.ErrHandle(err, "getExpireJobs", "")
-				return
+				break
 			}
 			// 并行获取Topic
 			topics := make(map[string][]string)

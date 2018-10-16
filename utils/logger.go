@@ -28,8 +28,14 @@ func (p *Logger) openFile(fileName string) *os.File {
 // 信息日志
 func (p *Logger) Info(message string) {
 	fileName := p.AccessLog
-	logFile := p.openFile(fileName)
-	logLogger := log.New(io.MultiWriter(logFile, os.Stdout), "[info] ", log.LstdFlags)
+	var out io.Writer
+	if (fileName == "") {
+		out = os.Stdout
+	} else {
+		logFile := p.openFile(fileName)
+		out = io.MultiWriter(logFile, os.Stdout)
+	}
+	logLogger := log.New(out, "[info] ", log.LstdFlags)
 	logLogger.Println(message)
 }
 
@@ -37,9 +43,15 @@ func (p *Logger) Info(message string) {
 // 会退出程序
 func (p *Logger) Error(message string) {
 	fileName := p.ErrorLog
-	logFile := p.openFile(fileName)
-	logLogger := log.New(io.MultiWriter(logFile, os.Stderr), "[error] ", log.LstdFlags)
-	logLogger.Fatalln(message)
+	var out io.Writer
+	if (fileName == "") {
+		out = os.Stdout
+	} else {
+		logFile := p.openFile(fileName)
+		out = io.MultiWriter(logFile, os.Stdout)
+	}
+	logLogger := log.New(out, "[error] ", log.LstdFlags)
+	logLogger.Println(message)
 }
 
 // 创建实例
