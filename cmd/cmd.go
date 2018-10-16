@@ -27,8 +27,8 @@ func welcome() {
 	fmt.Println(" / /_/ /  __/ / /_/ / /_/ /  __/ /    ");
 	fmt.Println("/_____/\\___/_/\\__,_/\\__, /\\___/_/     ");
 	fmt.Println("                   /____/             ");
-	fmt.Println("ServiceName:	delayerd");
-	fmt.Println("Version:		7.2.9");
+	fmt.Println("Service:		delayerd");
+	fmt.Println("Version:		" + APP_VERSION);
 }
 
 func Run() {
