@@ -50,7 +50,7 @@ func (p *Timer) Init() {
 	errHandle := func(err error, funcName string, data string) {
 		if (err != nil) {
 			if (data != "") {
-				data = ", [ " + data + " ]"
+				data = ", [" + data + "]"
 			}
 			message := fmt.Sprintf("FAILURE: func %s, %s%s", funcName, err.Error(), data)
 			p.Logger.Info(message)
@@ -123,26 +123,30 @@ func (p *Timer) moveJobToReadyQueue(jobIDs []string, topic string) {
 	// 获取连接
 	conn := p.Pool.Get()
 	defer conn.Close()
+	jobIDsStr := strings.Join(jobIDs, ",")
 	// 开启事物
 	if err := p.startTrans(conn); err != nil {
-		p.ErrHandle(err, "startTrans", strings.Join(jobIDs, ","))
+		p.ErrHandle(err, "startTrans", jobIDsStr)
 		return
 	}
 	// 移除JopPool
 	if err := p.delJopPool(conn, jobIDs, topic); err != nil {
-		p.ErrHandle(err, "delJopPool", strings.Join(jobIDs, ","))
+		p.ErrHandle(err, "delJopPool", jobIDsStr)
 		return
 	}
 	// 插入ReadyQueue
 	if err := p.addReadyQueue(conn, jobIDs, topic); err != nil {
-		p.ErrHandle(err, "addReadyQueue", strings.Join(jobIDs, ","))
+		p.ErrHandle(err, "addReadyQueue", jobIDsStr)
 		return
 	}
 	// 提交事物
 	if err := p.commit(conn); err != nil {
-		p.ErrHandle(err, "commit", strings.Join(jobIDs, ","))
+		p.ErrHandle(err, "commit", jobIDsStr)
 		return
 	}
+	// 打印日志
+	message := fmt.Sprintf("DONE: [%s]", jobIDsStr)
+	p.Logger.Info(message)
 }
 
 // 开启事务
