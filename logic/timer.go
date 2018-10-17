@@ -11,6 +11,7 @@ import (
 type Timer struct {
 	Config    utils.Config
 	Logger    utils.Logger
+	Ticker    *time.Ticker
 	Pool      *redis.Pool
 	ErrHandle func(err error, funcName string, data string)
 }
@@ -59,41 +60,46 @@ func (p *Timer) Init() {
 	p.ErrHandle = errHandle
 }
 
-// 执行
-func (p *Timer) Run() {
+// 开始
+func (p *Timer) Start() {
 	ticker := time.NewTicker(time.Duration(p.Config.Delayerd.TimerInterval) * time.Millisecond)
-	for {
-		select {
-		case <-ticker.C:
-			// 执行任务
-			jobs, err := p.getExpireJobs()
-			if (err != nil) {
-				p.ErrHandle(err, "getExpireJobs", "")
-				break
-			}
-			// 并行获取Topic
-			topics := make(map[string][]string)
-			ch := make(chan []string)
-			for _, jobID := range jobs {
-				go p.getJopTopic(jobID, ch)
-			}
-			// Topic分组
-			for i := 0; i < len(jobs); i++ {
-				arr := <-ch
-				if (arr[1] != "") {
-					if _, ok := topics[arr[1]]; !ok {
-						jobIDs := []string{arr[0]}
-						topics[arr[1]] = jobIDs
-					} else {
-						topics[arr[1]] = append(topics[arr[1]], arr[0])
-					}
-				}
-			}
-			// 并行移动至Topic对应的ReadyQueue
-			for topic, jobIDs := range topics {
-				go p.moveJobToReadyQueue(jobIDs, topic)
+	go func() {
+		for range ticker.C {
+			p.run()
+		}
+	}()
+	p.Ticker = ticker
+}
+
+// 执行任务
+func (p *Timer) run() {
+	// 获取到期的任务
+	jobs, err := p.getExpireJobs()
+	if (err != nil) {
+		p.ErrHandle(err, "getExpireJobs", "")
+		return
+	}
+	// 并行获取Topic
+	topics := make(map[string][]string)
+	ch := make(chan []string)
+	for _, jobID := range jobs {
+		go p.getJopTopic(jobID, ch)
+	}
+	// Topic分组
+	for i := 0; i < len(jobs); i++ {
+		arr := <-ch
+		if (arr[1] != "") {
+			if _, ok := topics[arr[1]]; !ok {
+				jobIDs := []string{arr[0]}
+				topics[arr[1]] = jobIDs
+			} else {
+				topics[arr[1]] = append(topics[arr[1]], arr[0])
 			}
 		}
+	}
+	// 并行移动至Topic对应的ReadyQueue
+	for topic, jobIDs := range topics {
+		go p.moveJobToReadyQueue(jobIDs, topic)
 	}
 }
 
@@ -177,4 +183,9 @@ func (p *Timer) addReadyQueue(conn redis.Conn, jobIDs []string, topic string) er
 		args[k+1] = v
 	}
 	return conn.Send("LPUSH", args...)
+}
+
+// 执行
+func (p *Timer) Stop() {
+	p.Ticker.Stop()
 }

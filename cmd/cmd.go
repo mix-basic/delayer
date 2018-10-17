@@ -4,6 +4,9 @@ import (
 	"delayer/utils"
 	"delayer/logic"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 var (
@@ -32,6 +35,7 @@ func welcome() {
 }
 
 func Run() {
+	exit := make(chan bool)
 	// 欢迎
 	welcome()
 	// 启动定时器
@@ -40,5 +44,18 @@ func Run() {
 		Logger: logger,
 	}
 	timer.Init()
-	timer.Run()
+	timer.Start()
+	// 信号处理
+	ch := make(chan os.Signal)
+	signal.Notify(ch, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		sig := <-ch
+		switch sig {
+		case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
+			timer.Stop()
+			exit <- true
+		}
+	}()
+	// 退出
+	<-exit
 }
