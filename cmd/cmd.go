@@ -16,13 +16,16 @@ const (
 
 func Run() {
 	// 命令行参数处理
-	flagHandle();
+	configuration := flagHandle()
 	// 变量定义
 	exit := make(chan bool)
 	// 欢迎
 	welcome()
 	// 实例化公共组件
-	config := utils.LoadConfig("delayer.conf")
+	if configuration == "" {
+		configuration = "delayer.conf"
+	}
+	config := utils.LoadConfig(configuration)
 	logger := utils.NewLogger(config)
 	// 启动定时器
 	timer := logic.Timer{
@@ -57,18 +60,33 @@ func welcome() {
 	fmt.Println("Version:		" + APP_VERSION);
 }
 
-func flagHandle() {
-	h := flag.Bool("h", false, "")
-	help := flag.Bool("help", false, "")
-	v := flag.Bool("v", false, "")
-	version := flag.Bool("version", false, "")
+func flagHandle() string {
+	// 参数解析
+	flagH := flag.Bool("h", false, "")
+	flagHelp := flag.Bool("help", false, "")
+	flagV := flag.Bool("v", false, "")
+	flagVersion := flag.Bool("version", false, "")
+	flagC := flag.String("c", "", "")
+	flagConfiguration := flag.String("configuration", "", "")
 	flag.Parse()
-	if *h || *help {
+	// 参数取值
+	help := *flagH || *flagHelp
+	version := *flagV || *flagVersion
+	configuration := ""
+	if (*flagC == "") {
+		configuration = *flagConfiguration
+	} else {
+		configuration = *flagC
+	}
+	// 打印型命令处理
+	if help {
 		printHelp()
 	}
-	if *v || *version {
+	if version {
 		printVersion()
 	}
+	// 返回参数值
+	return configuration
 }
 
 func printHelp() {
