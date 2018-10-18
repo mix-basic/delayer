@@ -15,7 +15,7 @@ var (
 )
 
 const (
-	APP_VERSION = "1.0.1-dev"
+	APP_VERSION = "1.0.1"
 )
 
 func init() {

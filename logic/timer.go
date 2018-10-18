@@ -151,7 +151,7 @@ func (p *Timer) moveJobToReadyQueue(jobIDs []string, topic string) {
 		return
 	}
 	// 打印日志
-	message := fmt.Sprintf("Expired job, Topic: %s, IDs: [%s]", topic, jobIDsStr)
+	message := fmt.Sprintf("Job is ready, Topic: %s, IDs: [%s]", topic, jobIDsStr)
 	p.Logger.Info(message)
 }
 
