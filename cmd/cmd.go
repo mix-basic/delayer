@@ -27,6 +27,8 @@ func Run() {
 	}
 	config := utils.LoadConfig(configuration)
 	logger := utils.NewLogger(config)
+	// 输出启动日志
+	logger.Info("Service started successfully.")
 	// 启动定时器
 	timer := logic.Timer{
 		Config: config,
@@ -47,6 +49,8 @@ func Run() {
 	}()
 	// 退出
 	<-exit
+	// 输出停止日志
+	logger.Info("Service stopped successfully.")
 }
 
 func welcome() {

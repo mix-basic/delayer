@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"io"
+	"fmt"
 )
 
 // 日志类
@@ -20,7 +21,8 @@ func (p *Logger) openFile(fileName string) *os.File {
 	}
 	logFileCreate, err := os.Create(fileName)
 	if err != nil {
-		log.Fatalln("Failed to create log file: " + fileName)
+		message := fmt.Sprintf("Failed to create log file: %s", fileName)
+		log.Fatalln(message)
 	}
 	return logFileCreate
 }

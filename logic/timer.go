@@ -53,7 +53,7 @@ func (p *Timer) Init() {
 			if (data != "") {
 				data = ", [" + data + "]"
 			}
-			message := fmt.Sprintf("FAILURE: func %s, %s%s", funcName, err.Error(), data)
+			message := fmt.Sprintf("FAILURE: func %s, %s%s.", funcName, err.Error(), data)
 			p.Logger.Error(message)
 		}
 	}

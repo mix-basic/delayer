@@ -3,6 +3,7 @@ package utils
 import (
 	"gopkg.in/ini.v1"
 	"log"
+	"fmt"
 )
 
 // 配置数据
@@ -36,7 +37,8 @@ func LoadConfig(fileName string) Config {
 	// 读取配置文件
 	conf, err := ini.Load(fileName)
 	if err != nil {
-		log.Fatalln("Configuration file read error: " + fileName)
+		message := fmt.Sprintf("Configuration file read error: %s", fileName)
+		log.Fatalln(message)
 	}
 	// 提取数据
 	delayerd := conf.Section("delayerd")
