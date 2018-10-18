@@ -52,3 +52,7 @@ Options:
 - Golang：开发中
 - Java：待定
 - Python：待定
+
+## License
+
+Apache License Version 2.0, http://www.apache.org/licenses/
