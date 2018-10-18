@@ -100,10 +100,12 @@ func printHelp() {
 	fmt.Println("-c/--configuration FILENAME -- configuration file path (searches if not given)");
 	fmt.Println("-h/--help -- print this usage message and exit");
 	fmt.Println("-v/--version -- print version number and exit");
+	fmt.Println()
 	os.Exit(0)
 }
 
 func printVersion() {
 	fmt.Println(APP_VERSION);
+	fmt.Println()
 	os.Exit(0)
 }
