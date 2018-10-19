@@ -35,6 +35,10 @@ type Redis struct {
 
 // 载入配置
 func LoadConfig(fileName string) Config {
+	// 默认文件
+	if fileName == "" {
+		fileName = "delayer.conf"
+	}
 	// 读取配置文件
 	conf, err := ini.Load(fileName)
 	if err != nil {

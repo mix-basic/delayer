@@ -3,5 +3,6 @@ package main
 import "delayer/cmd"
 
 func main() {
-	cmd.Run()
+	c := cmd.Cmd{}
+	c.Run()
 }

@@ -38,8 +38,7 @@ func (p *Logger) Info(message string) {
 }
 
 // 错误日志
-// 会退出程序
-func (p *Logger) Error(message string) {
+func (p *Logger) Error(message string, exit bool) {
 	fileName := p.ErrorLog
 	var out io.Writer
 	if (fileName == "") {
@@ -50,6 +49,9 @@ func (p *Logger) Error(message string) {
 		out = io.MultiWriter(logFile, os.Stdout)
 	}
 	logLogger := log.New(out, "[error] ", log.LstdFlags)
+	if exit {
+		logLogger.Fatalln(message)
+	}
 	logLogger.Println(message)
 }
 
