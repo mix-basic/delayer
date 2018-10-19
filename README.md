@@ -18,25 +18,25 @@
 启动：
 
 ```
-[root@localhost bin]# ./delayerd
+[root@localhost bin]# ./delayer
     ____       __
    / __ \___  / /___ ___  _____  _____
   / / / / _ \/ / __ `/ / / / _ \/ ___/
  / /_/ /  __/ / /_/ / /_/ /  __/ /
 /_____/\___/_/\__,_/\__, /\___/_/
                    /____/
-Service:		delayerd
+Service:		delayer
 Version:		1.0.1
-[info] 2018/10/18 19:51:10 Service started successfully.
+[info] 2018/10/19 11:24:24 Service started successfully, PID: 31023
 ```
 
 查看帮助：
 
 ```
-[root@localhost bin]# ./delayerd -h
-Usage: delayerd [options]
+Usage: delayer [options]
 
 Options:
+-d/--daemon run in the background
 -c/--configuration FILENAME -- configuration file path (searches if not given)
 -h/--help -- print this usage message and exit
 -v/--version -- print version number and exit
