@@ -8,6 +8,7 @@ import (
 	"fmt"
 )
 
+// 定时器类
 type Timer struct {
 	Config      utils.Config
 	Logger      utils.Logger
@@ -150,8 +151,7 @@ func (p *Timer) moveJobToReadyQueue(jobIDs []string, topic string) {
 		return
 	}
 	// 打印日志
-	message := fmt.Sprintf("Job is ready, Topic: %s, IDs: [%s]", topic, jobIDsStr)
-	p.Logger.Info(message)
+	p.Logger.Info(fmt.Sprintf("Job is ready, Topic: %s, IDs: [%s]", topic, jobIDsStr))
 }
 
 // 开启事务
