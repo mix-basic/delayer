@@ -160,7 +160,7 @@ func (p *Cmd) handleFlags() (bool, string) {
 
 // 打印帮助
 func printHelp() {
-	fmt.Println("Usage: delayerd [options]");
+	fmt.Println("Usage: delayer [options]");
 	fmt.Println()
 	fmt.Println("Options:");
 	fmt.Println("-d/--daemon run in the background");
