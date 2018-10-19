@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  branch = "master"
+  digest = "1:c13cb280719d0b80ce788ff3e8e160b6b690e3ffbffcab005f86285693f0dbea"
+  name = "github.com/VividCortex/godaemon"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "3d9f6e0b234fe7d17448b345b2e14ac05814a758"
+
+[[projects]]
   digest = "1:38ec74012390146c45af1f92d46e5382b50531247929ff3a685d2b2be65155ac"
   name = "github.com/gomodule/redigo"
   packages = [
@@ -24,6 +32,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/VividCortex/godaemon",
     "github.com/gomodule/redigo/redis",
     "gopkg.in/ini.v1",
   ]

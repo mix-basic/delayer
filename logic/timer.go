@@ -9,11 +9,11 @@ import (
 )
 
 type Timer struct {
-	Config    utils.Config
-	Logger    utils.Logger
-	Ticker    *time.Ticker
-	Pool      *redis.Pool
-	ErrHandle func(err error, funcName string, data string)
+	Config      utils.Config
+	Logger      utils.Logger
+	Ticker      *time.Ticker
+	Pool        *redis.Pool
+	HandleError func(err error, funcName string, data string)
 }
 
 const (
@@ -48,7 +48,7 @@ func (p *Timer) Init() {
 		MaxConnLifetime: time.Duration(p.Config.Redis.ConnMaxLifetime) * time.Second,
 	}
 	p.Pool = pool
-	errHandle := func(err error, funcName string, data string) {
+	handleError := func(err error, funcName string, data string) {
 		if (err != nil) {
 			if (data != "") {
 				data = ", [" + data + "]"
@@ -57,12 +57,12 @@ func (p *Timer) Init() {
 			p.Logger.Error(message)
 		}
 	}
-	p.ErrHandle = errHandle
+	p.HandleError = handleError
 }
 
 // 开始
 func (p *Timer) Start() {
-	ticker := time.NewTicker(time.Duration(p.Config.Delayerd.TimerInterval) * time.Millisecond)
+	ticker := time.NewTicker(time.Duration(p.Config.Delayer.TimerInterval) * time.Millisecond)
 	go func() {
 		for range ticker.C {
 			p.run()
@@ -76,7 +76,7 @@ func (p *Timer) run() {
 	// 获取到期的任务
 	jobs, err := p.getExpireJobs()
 	if (err != nil) {
-		p.ErrHandle(err, "getExpireJobs", "")
+		p.HandleError(err, "getExpireJobs", "")
 		return
 	}
 	// 并行获取Topic
@@ -116,7 +116,7 @@ func (p *Timer) getJopTopic(jobID string, ch chan []string) {
 	defer conn.Close()
 	topic, err := redis.Strings(conn.Do("HMGET", PREFIX_JOP_BUCKET+jobID, "topic"))
 	if (err != nil) {
-		p.ErrHandle(err, "getJopTopic", jobID)
+		p.HandleError(err, "getJopTopic", jobID)
 		ch <- []string{jobID, ""}
 		return
 	}
@@ -132,22 +132,22 @@ func (p *Timer) moveJobToReadyQueue(jobIDs []string, topic string) {
 	jobIDsStr := strings.Join(jobIDs, ",")
 	// 开启事物
 	if err := p.startTrans(conn); err != nil {
-		p.ErrHandle(err, "startTrans", jobIDsStr)
+		p.HandleError(err, "startTrans", jobIDsStr)
 		return
 	}
 	// 移除JopPool
 	if err := p.delJopPool(conn, jobIDs, topic); err != nil {
-		p.ErrHandle(err, "delJopPool", jobIDsStr)
+		p.HandleError(err, "delJopPool", jobIDsStr)
 		return
 	}
 	// 插入ReadyQueue
 	if err := p.addReadyQueue(conn, jobIDs, topic); err != nil {
-		p.ErrHandle(err, "addReadyQueue", jobIDsStr)
+		p.HandleError(err, "addReadyQueue", jobIDsStr)
 		return
 	}
 	// 提交事物
 	if err := p.commit(conn); err != nil {
-		p.ErrHandle(err, "commit", jobIDsStr)
+		p.HandleError(err, "commit", jobIDsStr)
 		return
 	}
 	// 打印日志

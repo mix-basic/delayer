@@ -15,16 +15,11 @@ type Logger struct {
 
 // 打开文件
 func (p *Logger) openFile(fileName string) *os.File {
-	logFileOpen, err := os.OpenFile(fileName, os.O_APPEND, 0644)
-	if err == nil {
-		return logFileOpen
-	}
-	logFileCreate, err := os.Create(fileName)
+	logFile, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
-		message := fmt.Sprintf("Failed to create log file: %s", fileName)
-		log.Fatalln(message)
+		log.Fatalln(fmt.Sprintf("Open file Failed: %s", fileName))
 	}
-	return logFileCreate
+	return logFile
 }
 
 // 信息日志
@@ -35,7 +30,8 @@ func (p *Logger) Info(message string) {
 		out = os.Stdout
 	} else {
 		logFile := p.openFile(fileName)
-		out = io.MultiWriter(logFile, os.Stdout)
+		defer logFile.Close()
+		out = io.MultiWriter(os.Stdout, logFile)
 	}
 	logLogger := log.New(out, "[info] ", log.LstdFlags)
 	logLogger.Println(message)
@@ -50,6 +46,7 @@ func (p *Logger) Error(message string) {
 		out = os.Stdout
 	} else {
 		logFile := p.openFile(fileName)
+		defer logFile.Close()
 		out = io.MultiWriter(logFile, os.Stdout)
 	}
 	logLogger := log.New(out, "[error] ", log.LstdFlags)
@@ -59,8 +56,8 @@ func (p *Logger) Error(message string) {
 // 创建实例
 func NewLogger(config Config) Logger {
 	logger := Logger{
-		AccessLog: config.Delayerd.AccessLog,
-		ErrorLog:  config.Delayerd.ErrorLog,
+		AccessLog: config.Delayer.AccessLog,
+		ErrorLog:  config.Delayer.ErrorLog,
 	}
 	return logger
 }

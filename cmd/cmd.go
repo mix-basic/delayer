@@ -5,9 +5,11 @@ import (
 	"delayer/logic"
 	"fmt"
 	"os"
+	"flag"
 	"os/signal"
 	"syscall"
-	"flag"
+	"io/ioutil"
+	"log"
 )
 
 const (
@@ -15,8 +17,10 @@ const (
 )
 
 func Run() {
+	// 守护进程
+	utils.Daemon()
 	// 命令行参数处理
-	configuration := flagHandle()
+	configuration := handleFlag()
 	// 变量定义
 	exit := make(chan bool)
 	// 欢迎
@@ -27,8 +31,11 @@ func Run() {
 	}
 	config := utils.LoadConfig(configuration)
 	logger := utils.NewLogger(config)
+	// pid处理
+	handlePid(config);
 	// 输出启动日志
-	logger.Info("Service started successfully.")
+	message := fmt.Sprintf("Service started successfully, PID: %d", os.Getpid())
+	logger.Info(message)
 	// 启动定时器
 	timer := logic.Timer{
 		Config: config,
@@ -37,6 +44,62 @@ func Run() {
 	timer.Init()
 	timer.Start()
 	// 信号处理
+	handleSignal(timer, exit)
+	// 退出
+	<-exit
+	// 输出停止日志
+	message = fmt.Sprintf("Service stopped successfully, PID: %d", os.Getpid())
+	logger.Info(message)
+}
+
+func welcome() {
+	fmt.Println("    ____       __                     ");
+	fmt.Println("   / __ \\___  / /___ ___  _____  _____");
+	fmt.Println("  / / / / _ \\/ / __ `/ / / / _ \\/ ___/");
+	fmt.Println(" / /_/ /  __/ / /_/ / /_/ /  __/ /    ");
+	fmt.Println("/_____/\\___/_/\\__,_/\\__, /\\___/_/     ");
+	fmt.Println("                   /____/             ");
+	fmt.Println("Service:		delayer");
+	fmt.Println("Version:		" + APP_VERSION);
+}
+
+func handlePid(config utils.Config) {
+	// 读取
+	pidStr, err := ioutil.ReadFile(config.Delayer.Pid)
+	if err != nil {
+		writePidFile(config.Delayer.Pid)
+		return
+	}
+	// 重复启动处理
+	pid, err := utils.ByteToInt(pidStr)
+	if (err != nil) {
+		writePidFile(config.Delayer.Pid)
+		return
+	}
+	pro, err := os.FindProcess(pid)
+	if err != nil {
+		writePidFile(config.Delayer.Pid)
+		return
+	}
+	err = pro.Signal(os.Signal(syscall.Signal(0)))
+	if err != nil {
+		// os: process already finished
+		// not supported by windows
+		writePidFile(config.Delayer.Pid)
+		return
+	}
+	log.Fatalln(fmt.Sprintf("ERROR: Service is being executed, PID: %d", pid))
+}
+
+func writePidFile(pidFile string) {
+	err := ioutil.WriteFile(pidFile, utils.IntToByte(os.Getpid()), 0644)
+	if err != nil {
+		log.Fatalln(fmt.Sprintf("PID file cannot be written: %s", pidFile))
+	}
+}
+
+// 信号处理
+func handleSignal(timer logic.Timer, exit chan bool) {
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	go func() {
@@ -47,24 +110,9 @@ func Run() {
 			exit <- true
 		}
 	}()
-	// 退出
-	<-exit
-	// 输出停止日志
-	logger.Info("Service stopped successfully.")
 }
 
-func welcome() {
-	fmt.Println("    ____       __                     ");
-	fmt.Println("   / __ \\___  / /___ ___  _____  _____");
-	fmt.Println("  / / / / _ \\/ / __ `/ / / / _ \\/ ___/");
-	fmt.Println(" / /_/ /  __/ / /_/ / /_/ /  __/ /    ");
-	fmt.Println("/_____/\\___/_/\\__,_/\\__, /\\___/_/     ");
-	fmt.Println("                   /____/             ");
-	fmt.Println("Service:		delayerd");
-	fmt.Println("Version:		" + APP_VERSION);
-}
-
-func flagHandle() string {
+func handleFlag() string {
 	// 参数解析
 	flagH := flag.Bool("h", false, "")
 	flagHelp := flag.Bool("help", false, "")
