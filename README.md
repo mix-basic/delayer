@@ -19,9 +19,9 @@
 ## 核心特征
 
 - 使用 Golang 开发，高性能。
-- 高可用，服务器端操作是原子的，且做了优雅停止，不会丢失数据。
+- 高可用：服务器端操作是原子的，并且做了优雅停止，不会丢失数据，在redis断线时会自动重连。
 - 可通过配置文件控制执行性能参数。
-- 提供具体言语的 SDK，使用简单快捷。
+- 提供多种语言的 SDK，使用简单快捷。
 
 ## 如何使用
 
@@ -91,7 +91,7 @@ Version:		1.0.1
 > 根据对应项目的说明使用
 
 - PHP：https://github.com/mixstart/delayer-client-php
-- Golang：开发中
+- Golang：https://github.com/mixstart/delayer-client-golang
 - Java：待定
 - Python：待定
 
