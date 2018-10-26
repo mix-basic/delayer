@@ -18,8 +18,8 @@ type Timer struct {
 }
 
 const (
-	KEY_JOP_POOL       = "delayer:jop_pool"
-	PREFIX_JOP_BUCKET  = "delayer:jop_bucket:"
+	KEY_JOB_POOL       = "delayer:job_pool"
+	PREFIX_JOB_BUCKET  = "delayer:job_bucket:"
 	PREFIX_READY_QUEUE = "delayer:ready_queue:"
 )
 
@@ -83,7 +83,7 @@ func (p *Timer) run() {
 	topics := make(map[string][]string)
 	ch := make(chan []string)
 	for _, jobID := range jobs {
-		go p.getJopTopic(jobID, ch)
+		go p.getJobTopic(jobID, ch)
 	}
 	// Topic分组
 	for i := 0; i < len(jobs); i++ {
@@ -107,16 +107,16 @@ func (p *Timer) run() {
 func (p *Timer) getExpireJobs() ([]string, error) {
 	conn := p.Pool.Get()
 	defer conn.Close()
-	return redis.Strings(conn.Do("ZRANGEBYSCORE", KEY_JOP_POOL, "0", time.Now().Unix()))
+	return redis.Strings(conn.Do("ZRANGEBYSCORE", KEY_JOB_POOL, "0", time.Now().Unix()))
 }
 
 // 获取任务的Topic
-func (p *Timer) getJopTopic(jobID string, ch chan []string) {
+func (p *Timer) getJobTopic(jobID string, ch chan []string) {
 	conn := p.Pool.Get()
 	defer conn.Close()
-	topic, err := redis.Strings(conn.Do("HMGET", PREFIX_JOP_BUCKET+jobID, "topic"))
+	topic, err := redis.Strings(conn.Do("HMGET", PREFIX_JOB_BUCKET+jobID, "topic"))
 	if (err != nil) {
-		p.HandleError(err, "getJopTopic", jobID)
+		p.HandleError(err, "getJobTopic", jobID)
 		ch <- []string{jobID, ""}
 		return
 	}
@@ -135,9 +135,9 @@ func (p *Timer) moveJobToReadyQueue(jobIDs []string, topic string) {
 		p.HandleError(err, "startTrans", jobIDsStr)
 		return
 	}
-	// 移除JopPool
-	if err := p.delJopPool(conn, jobIDs, topic); err != nil {
-		p.HandleError(err, "delJopPool", jobIDsStr)
+	// 移除JobPool
+	if err := p.delJobPool(conn, jobIDs, topic); err != nil {
+		p.HandleError(err, "delJobPool", jobIDsStr)
 		return
 	}
 	// 插入ReadyQueue
@@ -146,7 +146,15 @@ func (p *Timer) moveJobToReadyQueue(jobIDs []string, topic string) {
 		return
 	}
 	// 提交事物
-	if err := p.commit(conn); err != nil {
+	values, err := p.commit(conn)
+	if err != nil {
+		p.HandleError(err, "commit", jobIDsStr)
+		return
+	}
+	// 事务结果处理
+	v := values[0].(int64)
+	v1 := values[1].(int64)
+	if v == 0 || v1 == 0 {
 		p.HandleError(err, "commit", jobIDsStr)
 		return
 	}
@@ -160,14 +168,14 @@ func (p *Timer) startTrans(conn redis.Conn) error {
 }
 
 // 提交事务
-func (p *Timer) commit(conn redis.Conn) error {
-	return conn.Send("EXEC")
+func (p *Timer) commit(conn redis.Conn) ([]interface{}, error) {
+	return redis.Values(conn.Do("EXEC"))
 }
 
-// 移除JopPool
-func (p *Timer) delJopPool(conn redis.Conn, jobIDs []string, topic string) error {
+// 移除JobPool
+func (p *Timer) delJobPool(conn redis.Conn, jobIDs []string, topic string) error {
 	args := make([]interface{}, len(jobIDs)+1)
-	args[0] = KEY_JOP_POOL
+	args[0] = KEY_JOB_POOL
 	for k, v := range jobIDs {
 		args[k+1] = v
 	}
