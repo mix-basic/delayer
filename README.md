@@ -53,7 +53,7 @@ password =                      ; 密码, 无需密码留空
 max_idle = 2                    ; 最大空闲连接数
 max_active = 20                 ; 最大激活连接数
 idle_timeout = 3600             ; 空闲连接超时时间, 单位秒
-conn_max_lifetime = 3600        ; 连接生存时间, 单位秒
+conn_max_lifetime = 3600        ; 连接最大生存时间, 单位秒
 ```
 
 查看帮助：
@@ -81,7 +81,7 @@ Options:
                    /____/
 Service:		delayer
 Version:		1.0.1
-[info] 2018/10/19 11:24:24 Service started successfully, PID: 31023
+[info] 2018/10/21 11:24:24 Service started successfully, PID: 31023
 ```
 
 ## 客户端
