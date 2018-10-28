@@ -40,7 +40,7 @@
 
 ```
 [delayer]
-pid = /var/run/delayer.pid      ; 单例执行, 多实例执行留空, Win不支持
+pid = /var/run/delayer.pid      ; 需单例执行时配置, 多实例执行时留空, Win不支持单例
 timer_interval = 1000           ; 计算间隔时间, 单位毫秒
 access_log = logs/access.log    ; 存取日志
 error_log = logs/error.log      ; 错误日志
