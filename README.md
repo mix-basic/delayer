@@ -1,6 +1,6 @@
 # Delayer
 
-基于 Redis 的延迟消息队列中间件，采用 Golang 开发。
+基于 Redis 的延迟消息队列中间件，采用 Golang 开发，支持 PHP、Golang 等多种语言客户端。
 
 参考 [有赞延迟队列设计](http://tech.youzan.com/queuing_delay) 中的部分设计，优化后实现。
 
