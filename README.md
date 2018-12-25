@@ -90,8 +90,8 @@ Version:		1.0.1
 
 > 根据对应项目的说明使用
 
-- PHP：https://github.com/mixstart/delayer-client-php
-- Golang：https://github.com/mixstart/delayer-client-golang
+- PHP：https://github.com/mixbasic/delayer-client-php
+- Golang：https://github.com/mixbasic/delayer-client-golang
 - Java：待定
 - Python：待定
 
