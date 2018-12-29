@@ -32,7 +32,7 @@
 
 ## 服务器端
 
-在 https://github.com/mixstart/delayer/releases 中下载对应平台的程序。
+在 https://github.com/mix-start/delayer/releases 中下载对应平台的程序。
 
 > 支持 windows、linux、mac 三种平台
 
@@ -90,8 +90,8 @@ Version:		1.0.1
 
 > 根据对应项目的说明使用
 
-- PHP：https://github.com/mixbasic/delayer-client-php
-- Golang：https://github.com/mixbasic/delayer-client-golang
+- PHP：https://github.com/mix-basic/delayer-client-php
+- Golang：https://github.com/mix-basic/delayer-client-golang
 - Java：待定
 - Python：待定
 
