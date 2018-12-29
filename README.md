@@ -32,7 +32,7 @@
 
 ## 服务器端
 
-在 https://github.com/mix-start/delayer/releases 中下载对应平台的程序。
+在 https://github.com/mix-basic/delayer/releases 中下载对应平台的程序。
 
 > 支持 windows、linux、mac 三种平台
 
