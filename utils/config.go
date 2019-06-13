@@ -55,10 +55,10 @@ func LoadConfig(fileName string) Config {
 	port := redis.Key("port").String()
 	database, _ := redis.Key("database").Int()
 	password := redis.Key("password").String()
-	maxIdle, _ := delayer.Key("max_idle").Int()
-	maxActive, _ := delayer.Key("max_active").Int()
-	idleTimeout, _ := delayer.Key("idle_timeout").Int64()
-	connMaxLifetime, _ := delayer.Key("conn_max_lifetime").Int64()
+	maxIdle, _ := redis.Key("max_idle").Int()
+	maxActive, _ := redis.Key("max_active").Int()
+	idleTimeout, _ := redis.Key("idle_timeout").Int64()
+	connMaxLifetime, _ := redis.Key("conn_max_lifetime").Int64()
 	// 返回
 	data := Config{
 		Delayer: Delayer{

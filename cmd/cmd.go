@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	APP_VERSION = "1.0.3"
+	APP_VERSION = "1.0.4"
 )
 
 // 命令类
