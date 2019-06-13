@@ -53,7 +53,7 @@ func LoadConfig(fileName string) Config {
 	redis := conf.Section("redis")
 	host := redis.Key("host").String()
 	port := redis.Key("port").String()
-	database, _ := delayer.Key("database").Int()
+	database, _ := redis.Key("database").Int()
 	password := redis.Key("password").String()
 	maxIdle, _ := delayer.Key("max_idle").Int()
 	maxActive, _ := delayer.Key("max_active").Int()
